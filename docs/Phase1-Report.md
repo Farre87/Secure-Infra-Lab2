@@ -42,21 +42,20 @@ Jag har skapat en Vagrantfile som definierar sex noder med specifika resurser (C
 
 
 
-Namn	  IP	        Syfte	                RAM
+Namn	        IP	            Syfte	                  RAM
 
 
+control   	192.168.56.20   	Ansible Control Node  	2048MB
 
-control	192.168.56.20	Ansible Control Node	2048MB
+nginx	      192.168.56.21	    Load Balancer	          1024MB
 
-nginx	192.168.56.21	Load Balancer	        1024MB
+web1      	192.168.56.22	    Webserver 1           	1024MB
 
-web1	192.168.56.22	Webserver 1     	1024MB
+web2      	192.168.56.23    	Webserver 2	            1024MB
 
-web2	192.168.56.23	Webserver 2	        1024MB
+databas     192.168.56.24	    PostgreSQL	            2048MB
 
-databas 192.168.56.24	PostgreSQL	        2048MB
-
-monitor	192.168.56.25	Wazuh Monitoring	3072MB
+monitor    	192.168.56.25   	Wazuh Monitoring	      3072MB
 
 
 
