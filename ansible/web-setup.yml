@@ -1,0 +1,71 @@
+---
+- name: Konfigurera Webb-servrar (Flask & Gunicorn)
+  hosts: webservers
+  become: yes
+  vars:
+    db_host: "192.168.56.24"
+    db_name: "secure_db"
+    db_user: "farre_user"
+    db_pass: "hemligt_losenord"
+
+  tasks:
+    - name: Installera Python och systempaket
+      apt:
+        name:
+          - python3-pip
+          - python3-dev
+          - libpq-dev
+          - python3-venv
+        state: present
+        update_cache: yes
+
+    - name: Skapa applikationsmapp
+      file:
+        path: /var/www/my_app
+        state: directory
+        owner: vagrant
+        mode: '0755'
+
+    - name: Installera Flask och Gunicorn via Pip
+      pip:
+        name:
+          - flask
+          - gunicorn
+          - psycopg2-binary
+
+    - name: Skapa en enkel Flask-app (app.py)
+      copy:
+        dest: /var/www/my_app/app.py
+        content: |
+          from flask import Flask
+          import psycopg2
+          import socket
+          app = Flask(__name__)
+
+          @app.route('/')
+          def index():
+              hostname = socket.gethostname()
+              try:
+                  conn = psycopg2.connect(
+                      host="{{ db_host }}",
+                      database="{{ db_name }}",
+                      user="{{ db_user }}",
+                      password="{{ db_pass }}"
+                  )
+                  return f"<h1>Succé från {hostname}!</h1><p>Webbservern har kontakt med databasen.</p>"
+              except Exception as e:
+                  return f"<h1>Fel på {hostname}!</h1><p>Kunde inte nå databasen: {e}</p>"
+
+          if __name__ == "__main__":
+              app.run(host='0.0.0.0')
+
+    - name: Tillåt port 5000 i brandväggen
+      ufw:
+        rule: allow
+        port: 5000
+        proto: tcp
+
+    - name: Starta Flask-appen i bakgrunden
+      shell: "pkill gunicorn || true && nohup gunicorn --bind 0.0.0.0:5000 app:app > /dev/null 2>&1 &"
+      args:
+        chdir: /var/www/my_app

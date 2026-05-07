@@ -1,0 +1,21 @@
+---
+- name: Konfigurera Övervakning (Netdata)
+  hosts: monitoring
+  become: yes
+  tasks:
+    - name: Ladda ner och kör Netdata-installationsskriptet
+      shell: "curl https://get.netdata.cloud/kickstart.sh > /tmp/netdata-kickstart.sh && sh /tmp/netdata-kickstart.sh --dont-wait"
+      args:
+        creates: /usr/sbin/netdata
+
+    - name: Tillåt Netdata-porten i brandväggen (19999)
+      ufw:
+        rule: allow
+        port: 19999
+        proto: tcp
+
+    - name: Se till att Netdata är startat
+      service:
+        name: netdata
+        state: started
+        enabled: yes

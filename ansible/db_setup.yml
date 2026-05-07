@@ -1,0 +1,39 @@
+---
+- name: Konfigurera Database Server (PostgreSQL)
+  hosts: db
+  become: yes
+  tasks:
+    - name: Installera PostgreSQL och Python-bibliotek
+      apt:
+        name: 
+          - postgresql
+          - postgresql-contrib
+          - python3-psycopg2
+          - acl
+        state: present
+        update_cache: yes
+
+    - name: Skapa databas-användare
+      postgresql_user:
+        name: farre_user
+        password: "hemligt_losenord"
+        role_attr_flags: NOSUPERUSER,CREATEDB
+      become_user: postgres
+
+    - name: Skapa applikations-databasen
+      postgresql_db:
+        name: secure_db
+        owner: farre_user
+      become_user: postgres
+
+    - name: Brandvagg - Tillat PostgreSQL trafik fran lab-natverket
+      ufw:
+        rule: allow
+        from_ip: 192.168.56.0/24
+        port: 5432
+        proto: tcp
+
+    - name: Aktivera UFW brandvagg (Deny all per default)
+      ufw:
+        state: enabled
+        policy: deny

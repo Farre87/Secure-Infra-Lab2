@@ -1,0 +1,57 @@
+---
+- name: Konfigurera Nginx Load Balancer
+  hosts: loadbalancer
+  become: yes
+  tasks:
+    - name: Installera Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Skapa konfiguration för lastbalansering
+      copy:
+        dest: /etc/nginx/sites-available/load_balancer
+        content: |
+          upstream my_web_cluster {
+              server 192.168.56.22:5000;
+              server 192.168.56.23:5000;
+          }
+
+          server {
+              listen 80;
+              location / {
+                  proxy_pass http://my_web_cluster;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+              }
+          }
+
+    - name: Aktivera konfigurationen
+      file:
+        src: /etc/nginx/sites-available/load_balancer
+        dest: /etc/nginx/sites-enabled/load_balancer
+        state: link
+
+    - name: Ta bort default-konfigurationen
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Starta om Nginx
+      service:
+        name: nginx
+        state: restarted
+
+    - name: Brandvagg - Tillat HTTP (Port 80) och SSH
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - '80'
+        - '22'
+
+    - name: Aktivera UFW
+      ufw:
+        state: enabled
